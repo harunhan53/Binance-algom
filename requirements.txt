@@ -1,4 +1,2 @@
-requests
-python-binance
 flask
-python-dotenv
+python-binance
