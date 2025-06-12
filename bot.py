@@ -33,7 +33,7 @@ def webhook():
                 symbol=symbol,
                 side=SIDE_BUY,
                 type=ORDER_TYPE_MARKET,
-                quantity=0.004  # yaklaşık %40
+                quantity=0.004
             )
             alim40 = True
             position_open = True
@@ -47,7 +47,7 @@ def webhook():
                 symbol=symbol,
                 side=SIDE_BUY,
                 type=ORDER_TYPE_MARKET,
-                quantity=0.006  # yaklaşık %60
+                quantity=0.006
             )
             alim60 = True
             position_open = True
@@ -124,4 +124,4 @@ def webhook():
     return "OK"
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=5000)
