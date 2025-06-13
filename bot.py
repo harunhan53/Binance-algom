@@ -3,12 +3,17 @@ from flask import Flask, request
 from binance.client import Client
 from binance.enums import *
 import os
+from dotenv import load_dotenv
+
+# .env dosyasını yükle
+load_dotenv()
 
 app = Flask(__name__)
 
 # Binance API key'leri environment'tan alınıyor
 API_KEY = os.getenv("BINANCE_API_KEY")
 API_SECRET = os.getenv("BINANCE_API_SECRET")
+WEBHOOK_PASSWORD = os.getenv("WEBHOOK_PASSWORD")
 
 client = Client(API_KEY, API_SECRET)
 
@@ -25,11 +30,16 @@ def webhook():
     global position_open, alim40, alim60
 
     data = json.loads(request.data)
+
+    # Şifre kontrolü
+    if data.get("password") != WEBHOOK_PASSWORD:
+        return "Unauthorized", 401
+
     signal = data.get("alert")
 
     if signal == "BUY_40" and not position_open:
         try:
-            order = client.create_order(
+            client.create_order(
                 symbol=symbol,
                 side=SIDE_BUY,
                 type=ORDER_TYPE_MARKET,
@@ -43,7 +53,7 @@ def webhook():
 
     elif signal == "BUY_60" and not alim60:
         try:
-            order = client.create_order(
+            client.create_order(
                 symbol=symbol,
                 side=SIDE_BUY,
                 type=ORDER_TYPE_MARKET,
@@ -57,7 +67,7 @@ def webhook():
 
     elif signal == "SELL_40" and alim40:
         try:
-            order = client.create_order(
+            client.create_order(
                 symbol=symbol,
                 side=SIDE_SELL,
                 type=ORDER_TYPE_MARKET,
@@ -72,7 +82,7 @@ def webhook():
 
     elif signal == "SELL_60" and alim60:
         try:
-            order = client.create_order(
+            client.create_order(
                 symbol=symbol,
                 side=SIDE_SELL,
                 type=ORDER_TYPE_MARKET,
@@ -124,4 +134,4 @@ def webhook():
     return "OK"
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='127.0.0.1', port=5000)
