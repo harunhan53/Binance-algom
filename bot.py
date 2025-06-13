@@ -25,7 +25,7 @@ position_open = False
 alim40 = False
 alim60 = False
 
-@app.route('/webhook', methods=['POST'])
+@app.route('/webhook-gizli-path', methods=['POST'])
 def webhook():
     global position_open, alim40, alim60
 
