@@ -3,21 +3,16 @@ from flask import Flask, request
 from binance.client import Client
 from binance.enums import *
 import os
-from dotenv import load_dotenv
-
-# .env dosyasını yükle
-load_dotenv()
 
 app = Flask(__name__)
 
 # Binance API key'leri environment'tan alınıyor
 API_KEY = os.getenv("BINANCE_API_KEY")
 API_SECRET = os.getenv("BINANCE_API_SECRET")
-WEBHOOK_PASSWORD = os.getenv("WEBHOOK_PASSWORD")
 
 client = Client(API_KEY, API_SECRET)
 
-# İşlem yapılacak sembol ve miktarlar
+# İşlem yapılacak sembol
 symbol = "BTCUSDT"
 
 # Pozisyon durumu takip değişkeni
@@ -30,20 +25,25 @@ def webhook():
     global position_open, alim40, alim60
 
     data = json.loads(request.data)
+    signal = data.get("alert")
+    password = data.get("password")
 
     # Şifre kontrolü
-    if data.get("password") != WEBHOOK_PASSWORD:
-        return "Unauthorized", 401
-
-    signal = data.get("alert")
+    if password != "z0naL2025":
+        return "Unauthorized", 403
 
     if signal == "BUY_40" and not position_open:
         try:
-            client.create_order(
+            usdt_balance = float(client.get_asset_balance(asset="USDT")["free"])
+            amount_to_spend = usdt_balance * 0.4
+            btc_price = float(client.get_symbol_ticker(symbol=symbol)["price"])
+            quantity = round(amount_to_spend / btc_price, 6)
+
+            order = client.create_order(
                 symbol=symbol,
                 side=SIDE_BUY,
                 type=ORDER_TYPE_MARKET,
-                quantity=0.004
+                quantity=quantity
             )
             alim40 = True
             position_open = True
@@ -53,11 +53,16 @@ def webhook():
 
     elif signal == "BUY_60" and not alim60:
         try:
-            client.create_order(
+            usdt_balance = float(client.get_asset_balance(asset="USDT")["free"])
+            amount_to_spend = usdt_balance * 0.6
+            btc_price = float(client.get_symbol_ticker(symbol=symbol)["price"])
+            quantity = round(amount_to_spend / btc_price, 6)
+
+            order = client.create_order(
                 symbol=symbol,
                 side=SIDE_BUY,
                 type=ORDER_TYPE_MARKET,
-                quantity=0.006
+                quantity=quantity
             )
             alim60 = True
             position_open = True
@@ -67,11 +72,14 @@ def webhook():
 
     elif signal == "SELL_40" and alim40:
         try:
-            client.create_order(
+            balance = float(client.get_asset_balance(asset="BTC")["free"])
+            qty = round(balance * 0.4, 6)
+
+            order = client.create_order(
                 symbol=symbol,
                 side=SIDE_SELL,
                 type=ORDER_TYPE_MARKET,
-                quantity=0.004
+                quantity=qty
             )
             alim40 = False
             if not alim60:
@@ -82,11 +90,14 @@ def webhook():
 
     elif signal == "SELL_60" and alim60:
         try:
-            client.create_order(
+            balance = float(client.get_asset_balance(asset="BTC")["free"])
+            qty = round(balance * 0.6, 6)
+
+            order = client.create_order(
                 symbol=symbol,
                 side=SIDE_SELL,
                 type=ORDER_TYPE_MARKET,
-                quantity=0.006
+                quantity=qty
             )
             alim60 = False
             if not alim40:
@@ -97,14 +108,13 @@ def webhook():
 
     elif signal == "STOP" and position_open:
         try:
-            balance = client.get_asset_balance(asset="BTC")
-            qty = float(balance["free"])
-            if qty > 0:
+            balance = float(client.get_asset_balance(asset="BTC")["free"])
+            if balance > 0:
                 client.create_order(
                     symbol=symbol,
                     side=SIDE_SELL,
                     type=ORDER_TYPE_MARKET,
-                    quantity=qty
+                    quantity=round(balance, 6)
                 )
                 print("STOP LOSS - tüm pozisyon kapatıldı.")
             position_open = False
@@ -115,14 +125,13 @@ def webhook():
 
     elif signal == "TREND_BITTI" and position_open:
         try:
-            balance = client.get_asset_balance(asset="BTC")
-            qty = float(balance["free"])
-            if qty > 0:
+            balance = float(client.get_asset_balance(asset="BTC")["free"])
+            if balance > 0:
                 client.create_order(
                     symbol=symbol,
                     side=SIDE_SELL,
                     type=ORDER_TYPE_MARKET,
-                    quantity=qty
+                    quantity=round(balance, 6)
                 )
                 print("TREND BİTTİ - tüm pozisyon kapatıldı.")
             position_open = False
