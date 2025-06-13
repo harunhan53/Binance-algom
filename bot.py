@@ -3,6 +3,8 @@ from flask import Flask, request
 from binance.client import Client
 from binance.enums import *
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 
