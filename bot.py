@@ -4,13 +4,15 @@ from binance.client import Client
 from binance.enums import *
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 app = Flask(__name__)
 
-# Binance API key'leri environment'tan alınıyor
+# Binance API key'leri ve webhook şifresi environment'tan alınıyor
 API_KEY = os.getenv("BINANCE_API_KEY")
 API_SECRET = os.getenv("BINANCE_API_SECRET")
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 
 client = Client(API_KEY, API_SECRET)
 
@@ -31,7 +33,7 @@ def webhook():
         signal = data.get("alert")
         password = data.get("password")
 
-        if password != "z0naL2025":
+        if password != WEBHOOK_SECRET:
             return "Unauthorized", 401
 
         if signal == "BUY_40" and not position_open:
