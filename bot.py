@@ -5,9 +5,8 @@ from binance.enums import *
 import os
 from dotenv import load_dotenv
 
+# .env dosyasını yükle
 load_dotenv()
-
-app = Flask(__name__)
 
 # Binance API key'leri ve webhook şifresi environment'tan alınıyor
 API_KEY = os.getenv("BINANCE_API_KEY")
@@ -15,6 +14,8 @@ API_SECRET = os.getenv("BINANCE_API_SECRET")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 
 client = Client(API_KEY, API_SECRET)
+
+app = Flask(__name__)
 
 # İşlem yapılacak sembol
 symbol = "BTCUSDT"
@@ -38,7 +39,7 @@ def webhook():
 
         if signal == "BUY_40" and not position_open:
             try:
-                order = client.create_order(
+                client.create_order(
                     symbol=symbol,
                     side=SIDE_BUY,
                     type=ORDER_TYPE_MARKET,
@@ -46,13 +47,13 @@ def webhook():
                 )
                 alim40 = True
                 position_open = True
-                print("40% ALIM gerçekleşti.")
+                print("✅ 40% ALIM gerçekleşti.")
             except Exception as e:
-                print(f"BUY_40 hatası: {e}")
+                print(f"❌ BUY_40 hatası: {e}")
 
         elif signal == "BUY_60" and not alim60:
             try:
-                order = client.create_order(
+                client.create_order(
                     symbol=symbol,
                     side=SIDE_BUY,
                     type=ORDER_TYPE_MARKET,
@@ -60,13 +61,13 @@ def webhook():
                 )
                 alim60 = True
                 position_open = True
-                print("60% ALIM gerçekleşti.")
+                print("✅ 60% ALIM gerçekleşti.")
             except Exception as e:
-                print(f"BUY_60 hatası: {e}")
+                print(f"❌ BUY_60 hatası: {e}")
 
         elif signal == "SELL_40" and alim40:
             try:
-                order = client.create_order(
+                client.create_order(
                     symbol=symbol,
                     side=SIDE_SELL,
                     type=ORDER_TYPE_MARKET,
@@ -75,13 +76,13 @@ def webhook():
                 alim40 = False
                 if not alim60:
                     position_open = False
-                print("40% SATIM gerçekleşti.")
+                print("✅ 40% SATIM gerçekleşti.")
             except Exception as e:
-                print(f"SELL_40 hatası: {e}")
+                print(f"❌ SELL_40 hatası: {e}")
 
         elif signal == "SELL_60" and alim60:
             try:
-                order = client.create_order(
+                client.create_order(
                     symbol=symbol,
                     side=SIDE_SELL,
                     type=ORDER_TYPE_MARKET,
@@ -90,9 +91,9 @@ def webhook():
                 alim60 = False
                 if not alim40:
                     position_open = False
-                print("60% SATIM gerçekleşti.")
+                print("✅ 60% SATIM gerçekleşti.")
             except Exception as e:
-                print(f"SELL_60 hatası: {e}")
+                print(f"❌ SELL_60 hatası: {e}")
 
         elif signal == "STOP" and position_open:
             try:
@@ -105,12 +106,12 @@ def webhook():
                         type=ORDER_TYPE_MARKET,
                         quantity=qty
                     )
-                    print("STOP LOSS - tüm pozisyon kapatıldı.")
+                    print("🛑 STOP LOSS - tüm pozisyon kapatıldı.")
                 position_open = False
                 alim40 = False
                 alim60 = False
             except Exception as e:
-                print(f"STOP hatası: {e}")
+                print(f"❌ STOP hatası: {e}")
 
         elif signal == "TREND_BITTI" and position_open:
             try:
@@ -123,23 +124,23 @@ def webhook():
                         type=ORDER_TYPE_MARKET,
                         quantity=qty
                     )
-                    print("TREND BİTTİ - tüm pozisyon kapatıldı.")
+                    print("📉 TREND BİTTİ - tüm pozisyon kapatıldı.")
                 position_open = False
                 alim40 = False
                 alim60 = False
             except Exception as e:
-                print(f"TREND_BITTI hatası: {e}")
+                print(f"❌ TREND_BITTI hatası: {e}")
 
         elif signal == "REENTRY_ALLOWED":
             alim40 = False
             alim60 = False
             position_open = False
-            print("Tekrar alım izni verildi - bayraklar sıfırlandı.")
+            print("🔄 Tekrar alım izni verildi - bayraklar sıfırlandı.")
 
         return "OK"
 
     except Exception as e:
-        print(f"Genel webhook hatası: {e}")
+        print(f"🔥 Genel webhook hatası: {e}")
         return "HATA", 400
 
 if __name__ == '__main__':
